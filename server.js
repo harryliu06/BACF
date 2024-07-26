@@ -26,6 +26,7 @@ const app = express();
 const port = 3000;
 const API_URL = "http://localhost:4000";
 const API_KEY = "AIzaSyAv4rdHwyP1UWGibdPZsKf4ua5A_XwJu08";
+const SIGN = "AzgHupgN0r84mnSasNY3YRVAWIM=";
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -62,7 +63,7 @@ app.get("/new", (req, res) => {
   res.render("modify.ejs", { heading: "New Post", submit: "Create Post" });
 });
 
-app.get("/posts/:id", (req, res) => {
+app.get("/posts/view/:id", (req, res) => {
   const id = req.params.id;
 
   get(child(dbRef, `posts/`))
@@ -78,6 +79,38 @@ app.get("/posts/:id", (req, res) => {
         res.render("display.ejs", {
           post: selectedPost,
           key: API_KEY,
+          sign: SIGN,
+        });
+      } else {
+        console.log("No data available");
+        res.render("index.ejs", { posts: [] });
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      res.render("index.ejs", { posts: [] });
+    });
+});
+
+app.get("/posts/edit/:id", (req, res) => {
+  const id = req.params.id;
+
+  get(child(dbRef, `posts/`))
+    .then((snapshot) => {
+      if (snapshot.exists()) {
+        const posts = snapshot.val();
+
+        const postsArray = Object.keys(posts).map((key) => {
+          return { id: key, ...posts[key] };
+        });
+
+        let selectedPost = postsArray.find((post) => post.id === id);
+        res.render("modify.ejs", {
+          post: selectedPost,
+          key: API_KEY,
+          sign: SIGN,
+          heading: "Editing Page",
+          submit: "Submit",
         });
       } else {
         console.log("No data available");

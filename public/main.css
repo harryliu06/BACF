@@ -200,3 +200,19 @@ a.delete:hover {
 .preview-container:hover .delete-btn {
     display: flex;
 }
+
+@media screen and (max-width: 480px) {
+    .container {
+        margin: 0px;
+    }
+
+    #formFileMultiple.form-control, #locationInput, #content {
+        width: 100%;
+        box-sizing: border-box;
+    }
+   
+    #footer-link {
+        padding: 1px;
+    }
+
+}

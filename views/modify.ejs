@@ -22,7 +22,7 @@
                 <form id="editForm" method="post" action="/posts/<%=post.id%>">
                     <div class="mb-3">
                         <label for="formFileMultiple" class="form-label">Multiple files input example</label>
-                        <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple>
+                        <input class="form-control" type="file" id="formFileMultiple" name="image[]" value = "" multiple>
                         <div id="frames"></div>
                     </div>
                     <textarea name="content" rows="10"><%=post.content %></textarea>
