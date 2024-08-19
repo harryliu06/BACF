@@ -6,7 +6,7 @@
     <title>Editing Page</title>
     <link rel="stylesheet" href="/main.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAv4rdHwyP1UWGibdPZsKf4ua5A_XwJu08&libraries=places&callback=initMap"
+    <script src="https://maps.googleapis.com/maps/api/js?key=<%=key%>&libraries=places&callback=initMap"
         async defer></script>
     
 </head>
@@ -69,18 +69,8 @@
             ref,
             set,
         } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-        
 
-        const firebaseConfig = {
-                apiKey: "AIzaSyASafiaDM1GKIxR00mRYfCGRwpwFulIepE",
-                authDomain: "philips-30d6b.firebaseapp.com",
-                databaseURL: "https://philips-30d6b-default-rtdb.firebaseio.com",
-                projectId: "philips-30d6b",
-                storageBucket: "philips-30d6b.appspot.com",
-                messagingSenderId: "564545381495",
-                appId: "1:564545381495:web:f4562110d7ca7c282b1272",
-                measurementId: "G-8BBBZ3XL4F",
-        };
+        import firebaseConfig from "firebase.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);

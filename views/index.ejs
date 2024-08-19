@@ -200,7 +200,7 @@
                         <% posts.forEach(post=> { %>
                             <div class="col">
                                 <div class="card shadow-sm">
-                                    <% if (post.images.length> 0) { %>
+                                    <% if (post.images && post.images.length> 0) { %>
                                         <img class="bd-placeholder-img card-img-top" 
                                             src="<%= post.images[0] %>" alt="Post Image">
                                         <% } else { %>
@@ -221,8 +221,6 @@
                                                         <div class="btn-group">
                                                             <a href="/posts/view/<%= post.id %>"
                                                                 class="btn btn-sm btn-outline-secondary">View</a>
-                                                            <button type="button" href="/posts/edit/<%= post.id %>"
-                                                                class="btn btn-sm btn-outline-secondary">Edit</button>
                                                         </div>
                                                     </div>
                                                 </div>
