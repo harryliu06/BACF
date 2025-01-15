@@ -18,7 +18,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = 3000;
 const API_URL = "http://localhost:4000";
-const API_KEY = process.env.MAP_API;
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -78,7 +77,6 @@ app.get("/new", (req, res) => {
   res.render("modify.ejs", {
     heading: "New Post",
     submit: "Create Post",
-    key: API_KEY,
   });
 });
 
@@ -100,7 +98,6 @@ app.get("/posts/view/:id", (req, res) => {
         let selectedPost = postsArray.find((post) => post.id === id);
         res.render("display.ejs", {
           post: selectedPost,
-          key: API_KEY,
         });
       } else {
         console.log("No data available");
@@ -128,7 +125,7 @@ app.get("/posts/edit/:id", (req, res) => {
         let selectedPost = postsArray.find((post) => post.id === id);
         res.render("modify.ejs", {
           post: selectedPost,
-          key: API_KEY,
+
           heading: "Editing Page",
           submit: "Submit",
         });

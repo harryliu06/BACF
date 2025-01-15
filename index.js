@@ -20,7 +20,7 @@ const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 // Initialize Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(config),
-  databaseURL: "https://philips-30d6b-default-rtdb.firebaseio.com",
+  databaseURL: "https://bacf-66b3b-default-rtdb.firebaseio.com",
 });
 
 const db = admin.firestore();

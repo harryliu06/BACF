@@ -6,8 +6,7 @@
     <title>Editing Page</title>
     <link rel="stylesheet" href="/main.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=<%=key%>&libraries=places&callback=initMap"
-        async defer></script>
+
     
 </head>
 <body>
@@ -22,7 +21,7 @@
                 <form id="editForm" method="post" action="/posts/<%=post.id%>">
                     <div class="mb-3">
                         <label for="formFileMultiple" class="form-label">Multiple files input example</label>
-                        <input class="form-control" type="file" id="formFileMultiple" name="image[]" value = "" multiple>
+                        <input class="form-control" type="file" id="formFileMultiple" name="image[]" value = "" multiple accept="image/*,application/pdf,.doc,.docx">
                         <div id="frames"></div>
                     </div>
                     <textarea name="content" rows="10"><%=post.content %></textarea>
@@ -38,17 +37,12 @@
                     <form id="newPostForm">
                         <div class="mb-3">
                             <label for="formFileMultiple" class="form-label">Multiple files input example</label>
-                            <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple>
+                            <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple accept="image/*,application/pdf,.doc,.docx">
                             <div id="frames"></div>
                         </div>
     
                         <textarea name="content" id="content" placeholder="Content" required rows="10"></textarea>
-    
-                        <input type="text" id="locationInput" placeholder="Enter location">
-                        <div id="map"></div>
-                        <input type="hidden" name="latitude" id="latitude">
-                        <input type="hidden" name="longitude" id="longitude">
-    
+                        
                         <button class="full-width" id="insert" type="submit"><%= submit %></button>
                     </form>
                     <% } %>
@@ -70,143 +64,103 @@
             set,
         } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-        import firebaseConfig from "firebase.js";
+        import firebaseConfig from "/js/firebase.js";
+        
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const storage = getStorage(app);
 
-        const uploadImage = async (img) => {
-            if (img === null) return;
-            const imgRef = storageRef(storage, `images/${img.name}`);
-            try {
-                const snapshot = await uploadBytes(imgRef, img);
-                const downloadURL = await getDownloadURL(imgRef);
-                console.log("Image uploaded successfully!");
-                return downloadURL;
-            } catch (error) {
-                console.error("Error uploading image:", error);
-            }
-        };
-
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM fully loaded and parsed");
-            const insertButton = document.getElementById("newPostForm");
-            insertButton.addEventListener("submit", async(event) => {
-                console.log("Clicked");
-                event.preventDefault();
+                console.log("DOM fully loaded and parsed");
 
-                const content = document.getElementById("content").value;
-                const location = document.getElementById("locationInput").value;
-                const latitude = document.getElementById("latitude").value;
-                const longitude = document.getElementById("longitude").value;
+                const insertButton = document.getElementById("newPostForm");
+                insertButton.addEventListener("submit", async (event) => {
+                    console.log("Clicked");
+                    event.preventDefault();
 
-                const images = document.getElementById("formFileMultiple").files;
+                    const content = document.getElementById("content").value;
+                    const files = document.getElementById("formFileMultiple").files;
 
-                const imgUrls = [];
-                const uploadPromises = [];
+                    const fileUrls = [];
+                    const uploadPromises = [];
 
-                for (let img of images) {
-                    uploadPromises.push(uploadImage(img).then(url => {
-                        if (url) imgUrls.push(url);
-                    }));
-                }
+                    for (let file of files) {
+                        uploadPromises.push(uploadFile(file).then((url) => {
+                            if (url) fileUrls.push(url);
+                        }));
+                    }
 
-                try {
-                    await Promise.all(uploadPromises);
+                    try {
+                        await Promise.all(uploadPromises);
 
-                    const newPostRef = ref(db, "posts/" + Date.now());
-                    await set(newPostRef, {
-                        content: content,
-                        images: imgUrls,
-                        location: location,
-                        latitude: latitude,
-                        longitude: longitude,
-                    });
+                        const newPostRef = ref(db, "posts/" + Date.now());
+                        await set(newPostRef, {
+                            content: content,
+                            files: fileUrls,
+                        });
 
-                    console.log("Data entered successfully!");
-                    window.location.href = '/'; 
-                } catch (error) {
-                    console.error("Error uploading files or saving data:", error);
-                }
-            })
-        })
-    </script>
-    <script>
-    let map;
-    let marker;
-
-    function initMap() {
-        const initialLocation = { lat: -34.397, lng: 150.644 };
-        map = new google.maps.Map(document.getElementById("map"), {
-            center: initialLocation,
-            zoom: 8,
-        });
-
-        const input = document.getElementById("locationInput");
-        const autocomplete = new google.maps.places.Autocomplete(input);
-
-        autocomplete.addListener("place_changed", function () {
-            const place = autocomplete.getPlace();
-            if (!place.geometry) {
-                console.error("Autocomplete's returned place contains no geometry");
-                return;
-            }
-
-            map.setCenter(place.geometry.location);
-            map.setZoom(15);
-
-            placeMarker(place.geometry.location);
-            document.getElementById("latitude").value = place.geometry.location.lat();
-            document.getElementById("longitude").value = place.geometry.location.lng();
-        });
-
-        map.addListener("click", (event) => {
-            placeMarker(event.latLng);
-            document.getElementById("latitude").value = event.latLng.lat();
-            document.getElementById("longitude").value = event.latLng.lng();
-        });
-    }
-
-    function placeMarker(location) {
-        if (marker) {
-            marker.setPosition(location);
-        } else {
-            marker = new google.maps.Marker({
-                position: location,
-                map: map,
-            });
-        }
-    }
-
-    $(document).ready(function () {
-        $('#formFileMultiple').change(function () {
-            $("#frames").html('');
-            for (var i = 0; i < $(this)[0].files.length; i++) {
-                const file = this.files[i];
-                const imgURL = window.URL.createObjectURL(file);
-
-                // Create a container div for each preview
-                const previewContainer = $('<div class="preview-container"></div>');
-                const imgElement = $('<img src="' + imgURL + '" alt="preview"/>');
-                const deleteButton = $('<button class="delete-btn">&times;</button>');
-
-                // Append image and delete button to the container
-                previewContainer.append(imgElement);
-                previewContainer.append(deleteButton);
-
-                // Append the container to the frames div
-                $("#frames").append(previewContainer);
-
-                // Add event listener for the delete button
-                deleteButton.on('click', function () {
-                    previewContainer.remove();
+                        console.log("Data entered successfully!");
+                        window.location.href = '/admin';
+                    } catch (error) {
+                        console.error("Error uploading files or saving data:", error);
+                    }
                 });
-            }
-        });
-    });
 
-</script>
+                $('#formFileMultiple').change(function () {
+                    $("#frames").html('');
+                    for (var i = 0; i < $(this)[0].files.length; i++) {
+                        const file = this.files[i];
+                        const fileType = file.type;
+
+                        // Create a container div for each preview
+                        const previewContainer = $('<div class="preview-container"></div>');
+                        const deleteButton = $('<button class="delete-btn">&times;</button>');
+
+                        // Preview logic for different file types
+                        if (fileType.startsWith('image/')) {
+                            const imgURL = window.URL.createObjectURL(file);
+                            const imgElement = $('<img src="' + imgURL + '" alt="preview"/>');
+                            previewContainer.append(imgElement);
+                        } else if (fileType === 'application/pdf') {
+                            previewContainer.append('<p>' + file.name + ' (PDF)</p>');
+                        } else if (
+                            fileType === 'application/msword' ||
+                            fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        ) {
+                            previewContainer.append('<p>' + file.name + ' (Word Document)</p>');
+                        } else {
+                            previewContainer.append('<p>' + file.name + ' (Unsupported Preview)</p>');
+                        }
+
+                        // Append delete button to the container
+                        previewContainer.append(deleteButton);
+
+                        // Append the container to the frames div
+                        $("#frames").append(previewContainer);
+
+                        // Add event listener for the delete button  
+                        deleteButton.on('click', function () {
+                            previewContainer.remove();
+                        });
+                    }
+                });
+            });
+
+            const uploadFile = async (file) => {
+                if (file === null) return;
+                const fileRef = storageRef(storage, `files/${file.name}`);
+                try {
+                    const snapshot = await uploadBytes(fileRef, file);
+                    const downloadURL = await getDownloadURL(fileRef);
+                    console.log("File uploaded successfully!");
+                    return downloadURL;
+                } catch (error) {
+                    console.error("Error uploading file:", error);
+                }
+            };
+    </script>
+    
 </body>
 <%- include("partials/footer.ejs") %>
 
