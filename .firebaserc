@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "bacf-66b3b"
-  }
+    "default": "bacf-66b3b",
+    "test": "bacf-test"
+  },
+  "targets": {},
+  "etags": {}
 }

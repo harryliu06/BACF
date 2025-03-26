@@ -1,24 +1,19 @@
-import express from "express";
-import bodyParser from "body-parser";
-import path from "path";
-import { fileURLToPath } from "url";
-import { getDatabase, ref, child, get, remove } from "firebase/database";
-import { initializeApp } from "firebase/app";
-import firebaseConfig from "./public/js/firebase.js";
-import env from "dotenv";
-
-env.config();
-
-// Initialize Firebase
-const application = initializeApp(firebaseConfig);
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require("express");
+const bodyParser = require("body-parser");
+const path = require("path");
+const { getDatabase, ref, child, get, remove } = require("firebase/database");
+// const {initializeApp} = require("firebase/app");
+// const firebaseConfig = require("../public/js/firebase.cjs");
+require("dotenv").config();
 
 const app = express();
-const port = 3000;
-const API_URL = "http://localhost:4000";
 
+// Firebase Initialization
+// const application = initializeApp(firebaseConfig);
+
+// Set up EJS and Static Files
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -95,7 +90,7 @@ app.get("/posts/view/:id", (req, res) => {
           return { id: key, ...posts[key] };
         });
 
-        let selectedPost = postsArray.find((post) => post.id === id);
+        const selectedPost = postsArray.find((post) => post.id === id);
         res.render("display.ejs", {
           post: selectedPost,
         });
@@ -122,7 +117,7 @@ app.get("/posts/edit/:id", (req, res) => {
           return { id: key, ...posts[key] };
         });
 
-        let selectedPost = postsArray.find((post) => post.id === id);
+        const selectedPost = postsArray.find((post) => post.id === id);
         res.render("modify.ejs", {
           post: selectedPost,
 
@@ -160,6 +155,4 @@ app.get("/posts/delete/:id", (req, res) => {
     });
 });
 
-app.listen(port, () => {
-  console.log(`Backend server is running on http://localhost:${port}`);
-});
+module.exports = app;
