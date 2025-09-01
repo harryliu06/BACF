@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="Harry Liu" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.122.0">
-    <title>Philips</title>
+    <title>BACF</title>
 
     <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/album/">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3">
@@ -80,48 +80,128 @@
         .nav a:hover {
             color: #FFC700;
         }
+
+        .bd-placeholder-img.card-img-top {
+            height: 225px;
+            object-fit: cover;
+        }
+
+        .bg-holder {
+            background-image: url('bacf_mass.jpg');
+
+            background-size: cover;
+
+            background-position: center;
+            background-repeat: no-repeat;
+            width: 100%;
+
+            min-height: 70vh;
+
+        }
+
+        .bg-holder::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, .35);
+        }
+
+        .bg-holder,
+        .bg-holder::before {
+            position: relative;
+        }
+
+        /* prevent horizontal scroll caused by 100vw + scrollbar */
+        body {
+            overflow-x: hidden;
+        }
     </style>
 </head>
 
 <body>
-    <%-include("partials/header.ejs") %>
+    <%- include("partials/header.ejs")%>
 
         <main>
 
-            <section class="py-5 text-center container">
-                <div class="row py-lg-5">
-                    <div class="col-lg-6 col-md-8 mx-auto">
-                        <h1 class="fw-light">Album example</h1>
-                        <p class="lead text-body-secondary">Something short and leading about the collection below—its
-                            contents,
-                            the creator, etc. Make it short and sweet, but not too short so folks don’t simply skip over
-                            it
-                            entirely.</p>
-                        
+            <section class="bg-holder d-flex align-items-center">
+
+            </section>
+
+            <div class="container marketing my-5">
+
+                <hr class="featurette-divider">
+                <div class="row featurette">
+                    <div class="col-md-7 d-flex justify-content-center align-items-center">
+                        <h2 class="featurette-heading text-center fw-normal lh-1"> <span
+                                class="text-body-secondary">BACF GROUP PHOTO ON 07/05/25</span></h2>
+
+                    </div>
+                    <div class="col-md-5 order-md-1">
+                        <img src="ani_pic.jpg"
+                            class="bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto"
+                            alt="Feature image" width="500" height="500">
                     </div>
                 </div>
-            </section>
+                <hr class="featurette-divider">
+                <div class="row featurette">
+                    <div class="col-md-7 order-md-2 d-flex justify-content-center align-items-center">
+                        <h2 class="featurette-heading fw-normal lh-1">BACF PICNIC AT LAKE ELIZABETH PARK
+                    </div>
+                    <div class="col-md-5 order-md-1">
+                        <img src="picnic_pic.jpg"
+                            class="bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto"
+                            alt="Feature image" width="500" height="500">
+                    </div>
+                </div>
+                <hr class="featurette-divider">
+                <div class="row featurette">
+                    <div class="col-md-7 d-flex justify-content-center align-items-center">
+                        <h2 class="featurette-heading fw-normal lh-1"> <span class="text-body-secondary">One picnic, a
+                                thousand laughs 🥂🌻</span></h2>
+
+                    </div>
+                    <div class="col-md-5 order-md-1">
+                        <video src="picnic.mp4" class="featurette-video w-100 mx-auto d-block" controls autoplay muted
+                            loop width="500" height="300">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+                <hr class="featurette-divider">
+            </div>
 
             <div class="album py-5 bg-body-tertiary">
                 <div class="container">
-                    <% if(posts.length) { %>
+                    <% if (posts && posts.length) { %>
                         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                            <% posts.forEach(post=> { %>
+
+                            <% posts.forEach((post)=> {
+                                const hasFiles = post && post.files && post.files.length > 0;
+                                const first = hasFiles ? post.files[0] : null;
+                                const ext = first ? first.split('.').pop().toLowerCase().split('?')[0] : null;
+                                const isImage = ['jpg','jpeg','png','gif','bmp','webp','svg'].includes(ext);
+                                %>
                                 <div class="col">
                                     <div class="card shadow-sm">
-                                        <!-- <% if (post.images && post.images.length> 0) { %>
-                                            <img class="bd-placeholder-img card-img-top" src="<%= post.images[0] %>"
-                                                alt="Post Image">
+
+                                        <% if (isImage) { %>
+                                            <img class="bd-placeholder-img card-img-top" src="<%= first %>"
+                                                alt="Thumbnail">
                                             <% } else { %>
-                                                <svg class="bd-placeholder-img card-img-top"
+                                                <svg class="bd-placeholder-img card-img-top" width="100%" height="225"
                                                     xmlns="http://www.w3.org/2000/svg" role="img"
                                                     aria-label="Placeholder: Thumbnail"
                                                     preserveAspectRatio="xMidYMid slice" focusable="false">
-                                                    <title>Placeholder</title>
-                                                    <rect width="100%" height="100%" fill="#55595c" />
-                                                    <text x="50%" y="50%" fill="#eceeef" dy=".3em">Thumbnail</text>
+                                                    <title>
+                                                        <%= ext==='pdf' ? 'PDF Thumbnail' : 'Thumbnail' %>
+                                                    </title>
+                                                    <rect width="100%" height="100%" fill="#55595c"></rect>
+                                                    <text x="40%" y="50%" fill="#eceeef" dy=".3em">
+                                                        <%= ext==='pdf' ? 'PDF File' : 'Thumbnail' %>
+                                                    </text>
                                                 </svg>
-                                                <% } %> -->
+                                                <% } %>
+
                                                     <div class="card-body">
                                                         <p class="card-text">
                                                             <%= post.content %>
@@ -136,9 +216,12 @@
 
                                     </div>
                                 </div>
-                                <% }); %>
+                                <% }) %>
+
                         </div>
-                        <% } %>
+                        <% } else { %>
+                            <p class="text-center m-0">No posts yet.</p>
+                            <% } %>
                 </div>
             </div>
 
