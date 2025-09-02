@@ -8,10 +8,9 @@ import { initializeApp } from "firebase/app";
 import firebaseConfig from "../public/js/firebase.js";
 import env from "dotenv";
 
-const port = 3000;
+const port = process.env.PORT || 4000;
 env.config();
 
-// Initialize Firebase
 const application = initializeApp(firebaseConfig);
 
 const __filename = fileURLToPath(import.meta.url);
