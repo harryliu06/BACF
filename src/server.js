@@ -5,24 +5,57 @@ import { fileURLToPath } from "url";
 import functions from "firebase-functions";
 import { getDatabase, ref, child, get, remove } from "firebase/database";
 import { initializeApp } from "firebase/app";
-import firebaseConfig from "../public/js/firebase.js";
-import env from "dotenv";
+import admin from 'firebase-admin';
+import env from "dotenv/config";
+
+const serviceAccount = {
+  type: 'service_account',
+  project_id: process.env.PROJECT_ID,
+  private_key_id: process.env.PRIVATE_KEY_ID,
+  private_key: process.env.PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  client_email: process.env.CLIENT_EMAIL,
+  client_id: process.env.CLIENT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_X509_CERT_URL,
+  client_x509_cert_url: process.env.CLIENT_X509_CERT_URL,
+  universe_domain: process.env.UNIVERSE_DOMAIN,
+};
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+
+    databaseURL: process.env.DATABASE_URL, 
+  });
+}
 
 const port = process.env.PORT || 4000;
-env.config();
 
-const application = initializeApp(firebaseConfig);
+
+const firebaseConfig = {
+  apiKey: process.env.API_KEY,
+  authDomain: process.env.AUTH_DOMAIN,
+  projectId: process.env.PROJECT_ID,
+  storageBucket: process.env.STORAGE_BUCKET,
+  messagingSenderId: process.env.MESSAGING_SENDER_ID,
+  appId: process.env.APP_ID,
+  measurementId: process.env.MEASUREMENT_ID,
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = process.cwd();
-
 const server = express();
 
 server.set("view engine", "ejs");
 server.set("views", path.join(ROOT, "views"));
 
 server.use(express.static(path.join(process.cwd(), "public")));
+const application = initializeApp(firebaseConfig);
+
+
+
    
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
@@ -86,7 +119,7 @@ server.get("/new", (req, res) => {
 });
 
 server.get("/login", (req, res) => {
-  res.render("login.ejs");
+  res.render("login.ejs", {firebaseConfig});
 });
 server.get("/posts/view/:id", (req, res) => {
   const id = req.params.id;
@@ -165,6 +198,10 @@ server.get("/posts/delete/:id", (req, res) => {
     });
 });
 
+server.get('/config.json', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(firebaseConfig);
+});
 server.listen(port, () => {
   console.log(`Backend server is running on http://localhost:${port}`);
 });

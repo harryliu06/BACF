@@ -1,14 +1,7 @@
-import dotenv from "dotenv";
-dotenv.config();
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 
-const firebaseConfig = {
-  apiKey: process.env.API_KEY,
-  authDomain: process.env.AUTH_DOMAIN,
-  projectId: process.env.PROJECT_ID,
-  storageBucket: process.env.STORAGE_BUCKET,
-  messagingSenderId: process.env.MESSAGING_SENDER_ID,
-  appId: process.env.APP_ID,
-  measurementId: process.env.MEASUREMENT_ID,
-};
+const cfg = await fetch('/config.json', { cache: 'no-store' }).then(r => r.json());
+if (!cfg?.apiKey) throw new Error('Missing/invalid Firebase config');
 
-export default firebaseConfig;
+const app = initializeApp(cfg);
+export default app;         

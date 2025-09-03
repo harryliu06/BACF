@@ -27,16 +27,18 @@
       <div class="circle circle-two"></div>
     </div>
     <div class="theme-btn-container"></div>
+
   </section>
+
 </body>
 <script type="module" src="/login.js"></script>
 <script src="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js"></script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import firebaseConfig from "/js/firebase.js";
 
-  const app = initializeApp(firebaseConfig);
+<script type="module">
+  import app from "./js/firebase.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
   const auth = getAuth(app);
 
   const ADMIN_EMAIL = "hydroomega90@gmail.com";
