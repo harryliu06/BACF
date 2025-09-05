@@ -50,13 +50,12 @@ const displayThemeButtons = () => {
   });
 };
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-import firebaseConfig from "./js/firebase.js";
+
 
 import app from "./js/firebase.js"
 const auth = getAuth(app);
@@ -98,3 +97,4 @@ document.querySelector("form").addEventListener("submit", async (e) => {
 });
 
 displayThemeButtons();
+

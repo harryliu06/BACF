@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -35,39 +35,71 @@
 <script src="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js"></script>
 
 <script type="module">
-  import app from "./js/firebase.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import app from "js/firebase.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
   const auth = getAuth(app);
-
   const ADMIN_EMAIL = "hydroomega90@gmail.com";
 
+  // Avoid auto-bounce from /login if already signed in
+  onAuthStateChanged(auth, (user) => {
+    if (!user) return;
+    if (location.pathname !== "/login" && user.email === ADMIN_EMAIL) {
+      location.href = "/admin";
+    }
+  });
+
+  // Make sure your inputs have name="email" and name="password"
   document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = e.target.email.value.trim();
     const password = e.target.password.value;
-    const err = document.getElementById("loginError");
-    err.hidden = true;
-
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
-      if (user.email === ADMIN_EMAIL) {
-        location.href = "/admin";
-      } else {
-        location.href = "/";
-      }
-    } catch (e) {
-      err.textContent = e.message || "Login failed";
-      err.hidden = false;
+      location.href = user.email === ADMIN_EMAIL ? "/admin" : "/";
+    } catch (err) {
+      console.error(err);
+      // show error to the user here
     }
-  });
-
-  onAuthStateChanged(auth, (user) => {
-    if (!user) return;
-    if (user.email === ADMIN_EMAIL) location.href = "/admin";
   });
 </script>
 <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
+
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/login.css" />
+  <title>Login</title>
+</head>
+
+<body>
+  <section class="container">
+    <div class="login-container">
+      <div class="form-container">
+        <h1 class="opacity">LOGIN</h1>
+        <form id="loginForm">
+          <input type="email" name="email" placeholder="EMAIL" required />
+          <input type="password" name="password" placeholder="PASSWORD" required />
+          <button class="opacity" type="submit">LOGIN</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- One module script only -->
+  <script type="module" src="/login.js"></script>
+  <!-- Remove FirebaseUI script unless you actually use it -->
+</body>
 
 </html>

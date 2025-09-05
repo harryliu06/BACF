@@ -91,7 +91,7 @@
                     <h1>
                         <%= heading %>
                     </h1>
-                    <form id="newPostForm">
+                    <form id="newPost">
                         <div class="mb-3">
                             <label for="formFileMultiple" class="form-label">Multiple files input example</label>
                             <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple
@@ -106,112 +106,120 @@
                     <% } %>
         </div>
     </div>
-
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-        import {
-            getStorage, ref as storageRef, getDownloadURL, uploadBytes
-        } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-        import {
-            getDatabase, ref, set, update
-        } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-        import firebaseConfig from "/js/firebase.js";
+        import app from "/js/firebase.js";
+        import { getStorage, ref as storageRef, getDownloadURL, uploadBytes }
+            from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+        import { getDatabase, ref, set, update }
+            from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-        const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const storage = getStorage(app);
+        const replacements = new Map();
 
-        // Track per-item replacements for existing files
-        const replacements = new Map(); // index -> File
+        // Run immediately (script is at end of <body>, DOM is parsed)
+        init();
 
-        document.addEventListener("DOMContentLoaded", () => {
-            // NEW (create)
-            const newForm = document.getElementById("newPostForm");
-            newForm?.addEventListener("submit", onCreatePost);
+        function init() {
+            console.log("[modify] init");
 
-            // EDIT (update)
+            const newForm = document.getElementById("newPost");    // <- real reference
             const editForm = document.getElementById("editForm");
-            editForm?.addEventListener("submit", onEditPost);
 
-            // Existing file actions (replace/remove)
+            if (newForm) {
+                newForm.addEventListener("submit", (e) => {
+                    e.preventDefault();            // stop navigation like /new?content=...
+                    onCreatePost();
+                });
+            }
+
+            if (editForm) {
+                editForm.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    onEditPost(e);
+                });
+            }
+
+            document.getElementById("formFileMultiple")?.addEventListener("change", handlePreviewChange);
+
+            // wire existing-item replace/delete buttons (only on edit page)
             document.querySelectorAll("#frames .existing").forEach((box) => {
                 const idx = Number(box.dataset.index);
-                const replaceBtn = box.querySelector(".replace-btn");
-                const deleteBtn = box.querySelector(".delete-btn");
-                const replaceInp = box.querySelector(".replace-input");
-
-                replaceBtn?.addEventListener("click", () => replaceInp.click());
-                replaceInp?.addEventListener("change", (e) => handleReplacePick(e, box, idx));
-                deleteBtn?.addEventListener("click", () => {
+                box.querySelector(".replace-btn")?.addEventListener("click", () =>
+                    box.querySelector(".replace-input")?.click()
+                );
+                box.querySelector(".replace-input")?.addEventListener("change", (e) =>
+                    handleReplacePick(e, box, idx)
+                );
+                box.querySelector(".delete-btn")?.addEventListener("click", () => {
                     box.classList.toggle("removed");
                     if (box.classList.contains("removed")) replacements.delete(idx);
                 });
             });
+        }
 
-            // Live preview for newly selected files
-            $('#formFileMultiple').change(function () {
-                // keep existing previews; just append new previews below them
-                // if you want to clear only the NEW previews area, use another div
-                for (let i = 0; i < this.files.length; i++) {
-                    const file = this.files[i];
-                    const c = $('<div class="preview-container"></div>');
-                    const del = $('<button class="delete-btn" type="button">&times;</button>');
-
-                    if (file.type.startsWith('image/')) {
-                        c.append($('<img alt="preview">').attr("src", URL.createObjectURL(file)));
-                    } else if (file.type === 'application/pdf') {
-                        c.append('<p>' + file.name + ' (PDF to be uploaded)</p>');
-                    } else {
-                        c.append('<p>' + file.name + '</p>');
-                    }
-                    c.append(del);
-                    $("#frames").append(c);
-                    del.on('click', () => c.remove());
-                }
-            });
-        });
-
-        async function onCreatePost(e) {
-            e.preventDefault();
-            const content = document.getElementById("content").value;
-            const files = document.getElementById("formFileMultiple").files;
-            const urls = [];
-            for (const f of files) urls.push(await uploadOne(f));
-            await set(ref(db, "posts/" + Date.now()), { content, files: urls });
-            window.location.href = "/admin";
+        async function onCreatePost() {
+            console.log("[create] handler fired");
+            try {
+                const content = document.getElementById("content")?.value?.trim() ?? "";
+                const files = document.getElementById("formFileMultiple")?.files ?? [];
+                const urls = [];
+                for (const f of files) urls.push(await uploadOne(f));
+                await set(ref(db, "posts/" + Date.now()), { content, files: urls });
+                location.href = "/admin";
+            } catch (err) {
+                console.error("[create] failed", err);
+                alert("Create failed: " + (err?.message || err));
+            }
         }
 
         async function onEditPost(e) {
-            e.preventDefault();
             const form = e.currentTarget;
             const id = form.action.split("/").pop();
             const content = form.querySelector("textarea[name='content']").value;
 
-            // existing boxes in DOM order
             const boxes = Array.from(document.querySelectorAll("#frames .existing"));
             const existingUrls = boxes.map(el => el.dataset.url);
             const finalUrls = [];
 
-            // keep or replace existing
             for (let i = 0; i < boxes.length; i++) {
                 const box = boxes[i];
                 if (box.classList.contains("removed")) continue;
-
-                if (replacements.has(i)) {
-                    const file = replacements.get(i);
-                    const newUrl = await uploadOne(file);
-                    finalUrls.push(newUrl);
-                } else {
-                    finalUrls.push(existingUrls[i]);
-                }
+                if (replacements.has(i)) finalUrls.push(await uploadOne(replacements.get(i)));
+                else finalUrls.push(existingUrls[i]);
             }
 
-            // add new files (selected in the main file input)
             const newFiles = document.getElementById("formFileMultiple").files;
             for (const f of newFiles) finalUrls.push(await uploadOne(f));
 
             await update(ref(db, "posts/" + id), { content, files: finalUrls });
-            window.location.href = "/admin";
+            location.href = "/admin";
+        }
+
+        function handlePreviewChange(e) {
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const c = document.createElement("div");
+                c.className = "preview-container";
+                const del = document.createElement("button");
+                del.type = "button";
+                del.className = "delete-btn";
+                del.textContent = "×";
+                del.addEventListener("click", () => c.remove());
+                if (file.type.startsWith("image/")) {
+                    const img = document.createElement("img");
+                    img.alt = "preview";
+                    img.src = URL.createObjectURL(file);
+                    c.appendChild(img);
+                } else {
+                    const p = document.createElement("p");
+                    p.textContent = file.name;
+                    c.appendChild(p);
+                }
+                c.appendChild(del);
+                document.getElementById("frames").appendChild(c);
+            }
         }
 
         function handleReplacePick(e, box, idx) {
@@ -219,13 +227,11 @@
             if (!file) return;
             replacements.set(idx, file);
             box.classList.add("replaced");
-
-            // Update visual preview
             if (file.type.startsWith("image/")) {
                 const imgURL = URL.createObjectURL(file);
                 const oldImg = box.querySelector("img");
                 const oldIframe = box.querySelector("iframe");
-                if (oldIframe) oldIframe.remove();
+                oldIframe?.remove();
                 if (oldImg) oldImg.src = imgURL;
                 else {
                     const img = document.createElement("img");
@@ -233,24 +239,13 @@
                     img.alt = "replacement preview";
                     box.prepend(img);
                 }
-            } else if (file.type === "application/pdf") {
-                const oldImg = box.querySelector("img");
-                if (oldImg) oldImg.remove();
-                const oldIframe = box.querySelector("iframe");
-                if (oldIframe) oldIframe.remove();
-                const note = box.querySelector("a") || document.createElement("a");
-                note.removeAttribute("href");
-                note.textContent = file.name + " (PDF to be uploaded)";
-                if (!note.parentNode) box.prepend(note);
             } else {
-                const oldImg = box.querySelector("img");
-                if (oldImg) oldImg.remove();
-                const oldIframe = box.querySelector("iframe");
-                if (oldIframe) oldIframe.remove();
+                box.querySelector("img")?.remove();
+                box.querySelector("iframe")?.remove();
                 const note = box.querySelector("a") || document.createElement("a");
                 note.removeAttribute("href");
                 note.textContent = file.name + " (to be uploaded)";
-                if (!note.parentNode) box.preend(note);
+                if (!note.parentNode) box.prepend(note);
             }
         }
 
@@ -261,6 +256,7 @@
             return await getDownloadURL(refPath);
         }
     </script>
+
 
     <%- include("partials/footer.ejs") %>
 </body>

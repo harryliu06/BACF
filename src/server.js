@@ -1,13 +1,13 @@
-import express from "express";
-import bodyParser from "body-parser";
-import path from "path";
-import { fileURLToPath } from "url";
-import functions from "firebase-functions";
-import { getDatabase, ref, child, get, remove } from "firebase/database";
-import { initializeApp } from "firebase/app";
-import admin from 'firebase-admin';
-import env from "dotenv/config";
+// server.js
+import 'dotenv/config';
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+import admin from 'firebase-admin';
+import { getDatabase } from 'firebase-admin/database';
+
+/** ---- Admin SDK init ---- */
 const serviceAccount = {
   type: 'service_account',
   project_id: process.env.PROJECT_ID,
@@ -25,14 +25,24 @@ const serviceAccount = {
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-
     databaseURL: process.env.DATABASE_URL, 
   });
 }
+const db = getDatabase();
 
-const port = process.env.PORT || 4000;
+/** ---- Express setup ---- */
+const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT = process.cwd();
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(ROOT, 'views'));
+app.use(express.static(path.join(ROOT, 'public')));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
+/** Public Firebase config for the browser */
 const firebaseConfig = {
   apiKey: process.env.API_KEY,
   authDomain: process.env.AUTH_DOMAIN,
@@ -43,168 +53,122 @@ const firebaseConfig = {
   measurementId: process.env.MEASUREMENT_ID,
 };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT = process.cwd();
-const server = express();
-
-server.set("view engine", "ejs");
-server.set("views", path.join(ROOT, "views"));
-
-server.use(express.static(path.join(process.cwd(), "public")));
-const application = initializeApp(firebaseConfig);
-
-
-
-   
-server.use(bodyParser.urlencoded({ extended: true }));
-server.use(bodyParser.json());
-server.set('view engine', 'ejs');
-server.set('views', path.join(process.cwd(), 'views'));
-
-const dbRef = ref(getDatabase());
-
-server.get("/", (req, res) => {
-  get(child(dbRef, `posts/`))
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        const posts = snapshot.val();
-
-        const postsArray = Object.keys(posts).map((key) => {
-          return { id: key, ...posts[key] };
-        });
-
-        console.log(postsArray[0]);
-        res.render("user.ejs", { posts: postsArray });
-      } else {
-        console.log("No data available");
-        res.render("user.ejs", { posts: [] });
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-      res.render("user.ejs", { posts: [] });
-    });
-});
-
-server.get("/admin", (req, res) => {
-  get(child(dbRef, `posts/`))
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        const posts = snapshot.val();
-
-        const postsArray = Object.keys(posts).map((key) => {
-          return { id: key, ...posts[key] };
-        });
-
-        console.log(postsArray[0]);
-        res.render("index.ejs", { posts: postsArray });
-      } else {
-        console.log("No data available");
-        res.render("index.ejs", { posts: [] });
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-      res.render("index.ejs", { posts: [] });
-    });
-});
-
-// Route to render the edit page
-server.get("/new", (req, res) => {
-  res.render("modify.ejs", {
-    heading: "New Post",
-    submit: "Create Post",
-  });
-});
-
-server.get("/login", (req, res) => {
-  res.render("login.ejs", {firebaseConfig});
-});
-server.get("/posts/view/:id", (req, res) => {
-  const id = req.params.id;
-
-  get(child(dbRef, `posts/`))
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        const posts = snapshot.val();
-
-        const postsArray = Object.keys(posts).map((key) => {
-          return { id: key, ...posts[key] };
-        });
-
-        let selectedPost = postsArray.find((post) => post.id === id);
-        res.render("display.ejs", {
-          post: selectedPost,
-        });
-      } else {
-        console.log("No data available");
-        res.render("index.ejs", { posts: [] });
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-      res.render("index.ejs", { posts: [] });
-    });
-});
-
-server.get("/posts/edit/:id", (req, res) => {
-  const id = req.params.id;
-
-  get(child(dbRef, `posts/`))
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        const posts = snapshot.val();
-
-        const postsArray = Object.keys(posts).map((key) => {
-          return { id: key, ...posts[key] };
-        });
-
-        let selectedPost = postsArray.find((post) => post.id === id);
-        res.render("modify.ejs", {
-          post: selectedPost,
-          heading: "Editing Page",
-          submit: "Submit",
-        });
-      } else {
-        console.log("No data available");
-        res.render("index.ejs", { posts: [] });
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-      res.render("index.ejs", { posts: [] });
-    });
-});
-
-
-server.get("/posts/delete/:id", (req, res) => {
-  const id = req.params.id;
-
-  if (!id) {
-    return res.status(400).send("Post ID is required.");
-  }
-
-  const postRef = ref(getDatabase(), `posts/${id}`);
-
-  remove(postRef)
-    .then(() => {
-      console.log(`Post with ID: ${id} deleted successfully.`);
-      res.redirect("/admin");
-    })
-    .catch((error) => {
-      console.error(`Error deleting post with ID: ${id}`, error);
-      res.status(500).send("Failed to delete the post. Please try again.");
-    });
-});
-
-server.get('/config.json', (_req, res) => {
+/** Serve config to the client module */
+app.get('/config.json', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(firebaseConfig);
 });
-server.listen(port, () => {
-  console.log(`Backend server is running on http://localhost:${port}`);
+
+/** ---- Routes ---- */
+app.get('/', async (_req, res) => {
+  try {
+    const snap = await db.ref('posts').get();
+    const posts = snap.exists()
+      ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data }))
+      : [];
+    res.render('user.ejs', { posts });
+  } catch (e) {
+    console.error(e);
+    res.render('user.ejs', { posts: [] });
+  }
 });
 
+app.get('/admin', async (_req, res) => {
+  try {
+    const snap = await db.ref('posts').get();
+    const posts = snap.exists()
+      ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data }))
+      : [];
+    res.render('index.ejs', { posts });
+  } catch (e) {
+    console.error(e);
+    res.render('index.ejs', { posts: [] });
+  }
+});
 
-export const app = functions.https.onRequest(server);
+app.get('/new', (_req, res) => {
+  res.render('modify.ejs', { heading: 'New Post', submit: 'Create Post' });
+});
+
+app.get('/login', (_req, res) => {
+  // If your login page fetches /config.json you don't need to pass firebaseConfig here.
+  res.render('login.ejs', { firebaseConfig });
+});
+
+app.get('/posts/view/:id', async (req, res) => {
+  try {
+    const snap = await db.ref('posts').get();
+    const posts = snap.exists()
+      ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data }))
+      : [];
+    const post = posts.find(p => p.id === req.params.id);
+    res.render('display.ejs', { post });
+  } catch (e) {
+    console.error(e);
+    res.render('index.ejs', { posts: [] });
+  }
+});
+
+app.get('/posts/edit/:id', async (req, res) => {
+  try {
+    const snap = await db.ref('posts').get();
+    const posts = snap.exists()
+      ? Object.entries(snap.val()).map(([id, data]) => ({ id, ...data }))
+      : [];
+    const post = posts.find(p => p.id === req.params.id);
+    res.render('modify.ejs', { post, heading: 'Editing Page', submit: 'Submit' });
+  } catch (e) {
+    console.error(e);
+    res.render('index.ejs', { posts: [] });
+  }
+});
+
+// Create
+app.post('/posts', async (req, res) => {
+  try {
+    const { content, files } = req.body || {};
+    if (!content) return res.status(400).json({ error: 'content required' });
+    const id = Date.now().toString();
+    await db.ref(`posts/${id}`).set({
+      content,
+      files: Array.isArray(files) ? files : [],
+      createdAt: Date.now(),
+    });
+    res.status(201).json({ ok: true, id });
+  } catch (e) {
+    console.error('create failed', e);
+    res.status(500).json({ ok: false, error: 'Create failed' });
+  }
+});
+
+/** Update */
+app.post('/posts/:id', async (req, res) => {
+  try {
+    const { content, files } = req.body || {};
+    const patch = { updatedAt: Date.now() };
+    if (content !== undefined) patch.content = content;
+    if (Array.isArray(files)) patch.files = files;
+    await db.ref(`posts/${req.params.id}`).update(patch);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('update failed', e);
+    res.status(500).json({ ok: false, error: 'Update failed' });
+  }
+});
+
+/** Delete */
+app.get('/posts/delete/:id', async (req, res) => {
+  try {
+    await db.ref(`posts/${req.params.id}`).remove();
+    res.redirect('/admin');
+  } catch (e) {
+    console.error('delete failed', e);
+    res.status(500).send('Failed to delete the post.');
+  }
+});
+
+/** ---- Start ---- */
+const port = process.env.PORT || 4000;
+app.listen(port, () => console.log(`Server http://localhost:${port}`));
+
+export default app;
