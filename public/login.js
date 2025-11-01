@@ -70,8 +70,7 @@ function showError(message) {
   errorDiv.innerText = message;
   document.querySelector(".form-container").appendChild(errorDiv);
 
-  setTimeout(() => errorDiv.remove(), 10000); // Remove error message after 3 seconds
-}
+  setTimeout(() => errorDiv.remove(), 10000); 
 
 // Login Functionality
 document.querySelector("form").addEventListener("submit", async (e) => {
