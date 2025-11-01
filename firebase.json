@@ -13,6 +13,27 @@
   "database": {
     "rules": "database.rules.json"
   },
+<<<<<<< HEAD
+  "functions": [
+    {
+      "source": ".",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "runtime": "nodejs22"
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
+=======
   "hosting": {
     "public": "public",
     "ignore": [
@@ -47,3 +68,4 @@
   }
 
 }
+>>>>>>> main

@@ -1,169 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editing Page</title>
-    <link rel="stylesheet" href="/main.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <%= heading || "Editing Page" %>
+    </title>
+    <link rel="stylesheet" href="/main.css" />
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        .preview-container {
+            position: relative;
+            display: inline-block;
+            margin: 8px;
+            vertical-align: top
+        }
 
-    
+        .preview-container img {
+            max-width: 160px;
+            max-height: 120px;
+            display: block
+        }
+
+        .pdf-thumb {
+            width: 200px;
+            height: 140px;
+            border: 1px solid #ddd;
+            display: block
+        }
+
+        .actions {
+            margin-top: 6px;
+            margin-bottom: 6px;
+            display: flex;
+            gap: 6px
+        }
+
+        .preview-container.removed {
+            opacity: .4;
+            filter: grayscale(1)
+        }
+    </style>
 </head>
-<body>
 
+<body>
     <div class="container">
-        
         <div class="post">
             <% if (locals.post) { %>
                 <h1>
-                    <%=heading%>
+                    <%= heading %>
                 </h1>
-                <form id="editForm" method="post" action="/posts/<%=post.id%>">
+
+                <form id="editForm" method="post" action="/posts/<%= post.id %>">
                     <div class="mb-3">
-                        <label for="formFileMultiple" class="form-label">Multiple files input example</label>
-                        <input class="form-control" type="file" id="formFileMultiple" name="image[]" value = "" multiple accept="image/*,application/pdf,.doc,.docx">
-                        <div id="frames"></div>
+                        <label for="formFileMultiple" class="form-label">Add more files</label>
+                        <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple
+                            accept="image/*,application/pdf,.doc,.docx">
+                        <div id="frames">
+                            <% (post.files || []).forEach(function (url, i) { %>
+                                <div class="preview-container existing" data-url="<%= url %>" data-index="<%= i %>">
+                                    <% if (/\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(url)) { %>
+                                        <img src="<%= url %>" alt="existing file">
+                                        <% } else if (/\.pdf(\?|$)/i.test(url)) { %>
+                                            <iframe src="<%= url %>#toolbar=0" class="pdf-thumb"></iframe>
+                                            <a href="<%= url %>" target="_blank">Open PDF</a>
+                                            <% } else { %>
+                                                <a href="<%= url %>" target="_blank">
+                                                    <%= (url.split('/').pop() || 'file' ).split('?')[0] %>
+                                                </a>
+                                                <% } %>
+                                                    <div class="actions">
+                                                        <button class="replace-btn" type="button">Replace</button>
+                                                        <button class="delete-btn" type="button">✖</button>
+                                                        <input class="replace-input" type="file" hidden
+                                                            accept="image/*,application/pdf,.doc,.docx">
+                                                    </div>
+                                </div>
+                                <% }) %>
+                        </div>
                     </div>
-                    <textarea name="content" rows="10"><%=post.content %></textarea>
-    
+
+                    <textarea name="content" rows="10"><%= post.content %></textarea>
                     <button class="full-width" type="submit">
                         <%= submit %>
                     </button>
                 </form>
+
                 <% } else { %>
                     <h1>
-                        <%=heading%>
+                        <%= heading %>
                     </h1>
-                    <form id="newPostForm">
+                    <form id="newPost">
                         <div class="mb-3">
                             <label for="formFileMultiple" class="form-label">Multiple files input example</label>
-                            <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple accept="image/*,application/pdf,.doc,.docx">
+                            <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple
+                                accept="image/*,application/pdf,.doc,.docx">
                             <div id="frames"></div>
                         </div>
-    
                         <textarea name="content" id="content" placeholder="Content" required rows="10"></textarea>
-                        
-                        <button class="full-width" id="insert" type="submit"><%= submit %></button>
+                        <button class="full-width" id="insert" type="submit">
+                            <%= submit %>
+                        </button>
                     </form>
                     <% } %>
         </div>
     </div>
-    
+
+
+    <footer class="border-top py-3 my-4">
+        <div class="container position-relative">
+
+            <a href="/admin" class="text-decoration-none"><span class="text-body-secondary fw-medium"><strong>Back To
+                        Admin Page</strong></span></a>
+
+
+
+        </div>
+    </footer>
+
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-        import {
-            getStorage,
-            ref as storageRef,
-            getDownloadURL,
-            uploadBytes,
-        } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-        import {
-            getDatabase,
-            ref,
-            set,
-        } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+        import app from "/js/firebase.js";
+        import { getStorage, ref as storageRef, getDownloadURL, uploadBytes }
+            from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+        import { getDatabase, ref, set, update }
+            from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-        import firebaseConfig from "/js/firebase.js";
-        
-
-        const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const storage = getStorage(app);
+        const replacements = new Map();
 
-        document.addEventListener('DOMContentLoaded', () => {
-                console.log("DOM fully loaded and parsed");
+        // Run immediately (script is at end of <body>, DOM is parsed)
+        init();
 
-                const insertButton = document.getElementById("newPostForm");
-                insertButton.addEventListener("submit", async (event) => {
-                    console.log("Clicked");
-                    event.preventDefault();
+        function init() {
+            console.log("[modify] init");
 
-                    const content = document.getElementById("content").value;
-                    const files = document.getElementById("formFileMultiple").files;
+            const newForm = document.getElementById("newPost");    // <- real reference
+            const editForm = document.getElementById("editForm");
 
-                    const fileUrls = [];
-                    const uploadPromises = [];
-
-                    for (let file of files) {
-                        uploadPromises.push(uploadFile(file).then((url) => {
-                            if (url) fileUrls.push(url);
-                        }));
-                    }
-
-                    try {
-                        await Promise.all(uploadPromises);
-
-                        const newPostRef = ref(db, "posts/" + Date.now());
-                        await set(newPostRef, {
-                            content: content,
-                            files: fileUrls,
-                        });
-
-                        console.log("Data entered successfully!");
-                        window.location.href = '/admin';
-                    } catch (error) {
-                        console.error("Error uploading files or saving data:", error);
-                    }
+            if (newForm) {
+                newForm.addEventListener("submit", (e) => {
+                    e.preventDefault();            // stop navigation like /new?content=...
+                    onCreatePost();
                 });
+            }
 
-                $('#formFileMultiple').change(function () {
-                    $("#frames").html('');
-                    for (var i = 0; i < $(this)[0].files.length; i++) {
-                        const file = this.files[i];
-                        const fileType = file.type;
+            if (editForm) {
+                editForm.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    onEditPost(e);
+                });
+            }
 
-                        // Create a container div for each preview
-                        const previewContainer = $('<div class="preview-container"></div>');
-                        const deleteButton = $('<button class="delete-btn">&times;</button>');
+            document.getElementById("formFileMultiple")?.addEventListener("change", handlePreviewChange);
 
-                        // Preview logic for different file types
-                        if (fileType.startsWith('image/')) {
-                            const imgURL = window.URL.createObjectURL(file);
-                            const imgElement = $('<img src="' + imgURL + '" alt="preview"/>');
-                            previewContainer.append(imgElement);
-                        } else if (fileType === 'application/pdf') {
-                            previewContainer.append('<p>' + file.name + ' (PDF)</p>');
-                        } else if (
-                            fileType === 'application/msword' ||
-                            fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                        ) {
-                            previewContainer.append('<p>' + file.name + ' (Word Document)</p>');
-                        } else {
-                            previewContainer.append('<p>' + file.name + ' (Unsupported Preview)</p>');
-                        }
-
-                        // Append delete button to the container
-                        previewContainer.append(deleteButton);
-
-                        // Append the container to the frames div
-                        $("#frames").append(previewContainer);
-
-                        // Add event listener for the delete button  
-                        deleteButton.on('click', function () {
-                            previewContainer.remove();
-                        });
-                    }
+            // wire existing-item replace/delete buttons (only on edit page)
+            document.querySelectorAll("#frames .existing").forEach((box) => {
+                const idx = Number(box.dataset.index);
+                box.querySelector(".replace-btn")?.addEventListener("click", () =>
+                    box.querySelector(".replace-input")?.click()
+                );
+                box.querySelector(".replace-input")?.addEventListener("change", (e) =>
+                    handleReplacePick(e, box, idx)
+                );
+                box.querySelector(".delete-btn")?.addEventListener("click", () => {
+                    box.classList.toggle("removed");
+                    if (box.classList.contains("removed")) replacements.delete(idx);
                 });
             });
+        }
 
-            const uploadFile = async (file) => {
-                if (file === null) return;
-                const fileRef = storageRef(storage, `files/${file.name}`);
-                try {
-                    const snapshot = await uploadBytes(fileRef, file);
-                    const downloadURL = await getDownloadURL(fileRef);
-                    console.log("File uploaded successfully!");
-                    return downloadURL;
-                } catch (error) {
-                    console.error("Error uploading file:", error);
+        async function onCreatePost() {
+            console.log("[create] handler fired");
+            try {
+                const content = document.getElementById("content")?.value?.trim() ?? "";
+                const files = document.getElementById("formFileMultiple")?.files ?? [];
+                const urls = [];
+                for (const f of files) urls.push(await uploadOne(f));
+                await set(ref(db, "posts/" + Date.now()), { content, files: urls });
+                location.href = "/admin";
+            } catch (err) {
+                console.error("[create] failed", err);
+                alert("Create failed: " + (err?.message || err));
+            }
+        }
+
+        async function onEditPost(e) {
+            const form = e.currentTarget;
+            const id = form.action.split("/").pop();
+            const content = form.querySelector("textarea[name='content']").value;
+
+            const boxes = Array.from(document.querySelectorAll("#frames .existing"));
+            const existingUrls = boxes.map(el => el.dataset.url);
+            const finalUrls = [];
+
+            for (let i = 0; i < boxes.length; i++) {
+                const box = boxes[i];
+                if (box.classList.contains("removed")) continue;
+                if (replacements.has(i)) finalUrls.push(await uploadOne(replacements.get(i)));
+                else finalUrls.push(existingUrls[i]);
+            }
+
+            const newFiles = document.getElementById("formFileMultiple").files;
+            for (const f of newFiles) finalUrls.push(await uploadOne(f));
+
+            await update(ref(db, "posts/" + id), { content, files: finalUrls });
+            location.href = "/admin";
+        }
+
+        function handlePreviewChange(e) {
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const c = document.createElement("div");
+                c.className = "preview-container";
+                const del = document.createElement("button");
+                del.type = "button";
+                del.className = "delete-btn";
+                del.textContent = "×";
+                del.addEventListener("click", () => c.remove());
+                if (file.type.startsWith("image/")) {
+                    const img = document.createElement("img");
+                    img.alt = "preview";
+                    img.src = URL.createObjectURL(file);
+                    c.appendChild(img);
+                } else {
+                    const p = document.createElement("p");
+                    p.textContent = file.name;
+                    c.appendChild(p);
                 }
-            };
+                c.appendChild(del);
+                document.getElementById("frames").appendChild(c);
+            }
+        }
+
+        function handleReplacePick(e, box, idx) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            replacements.set(idx, file);
+            box.classList.add("replaced");
+            if (file.type.startsWith("image/")) {
+                const imgURL = URL.createObjectURL(file);
+                const oldImg = box.querySelector("img");
+                const oldIframe = box.querySelector("iframe");
+                oldIframe?.remove();
+                if (oldImg) oldImg.src = imgURL;
+                else {
+                    const img = document.createElement("img");
+                    img.src = imgURL;
+                    img.alt = "replacement preview";
+                    box.prepend(img);
+                }
+            } else {
+                box.querySelector("img")?.remove();
+                box.querySelector("iframe")?.remove();
+                const note = box.querySelector("a") || document.createElement("a");
+                note.removeAttribute("href");
+                note.textContent = file.name + " (to be uploaded)";
+                if (!note.parentNode) box.prepend(note);
+            }
+        }
+
+        async function uploadOne(file) {
+            const unique = `${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name}`;
+            const refPath = storageRef(storage, `files/${unique}`);
+            await uploadBytes(refPath, file);
+            return await getDownloadURL(refPath);
+        }
     </script>
-    
+
+
 </body>
-<%- include("partials/footer.ejs") %>
-
-
 
 </html>
