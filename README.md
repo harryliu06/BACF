@@ -2,9 +2,9 @@ BACF Website
 
 🌐 About
 
-The bacf website is a personal project I built to explore modern web development and hosting. It serves as a dynamic web application where I can manage posts, connect with Firebase services, and experiment with responsive front-end and back-end design.
+The bacf website is a personal project I built to explore modern web development. It serves as a dynamic web application where I can manage posts, connect with Firebase services, and experiment with responsive front-end and back-end design.
 
-This project is hosted on Render (server deployment) and integrates with Firebase for authentication, database, and storage.
+The project runs as a local Express server and integrates with Firebase for authentication, database, and storage.
 
 ✨ What the Website Does
 
@@ -19,8 +19,6 @@ This project is hosted on Render (server deployment) and integrates with Firebas
 * Designed to be responsive across devices, including mobile.
 
 🛠 Technologies Used
-
-* Hosting/Deployment: Render (server)
 
 * Backend: Node.js (v22), Express.js
 
@@ -39,8 +37,6 @@ This project is hosted on Render (server deployment) and integrates with Firebas
 This project allowed me to:
 
 * Practice building a full-stack web application.
-
-* Learn about deployment workflows with Render.
 
 * Explore Firebase integration for real-time data and storage.
 

@@ -95,5 +95,5 @@ document.querySelector("form").addEventListener("submit", async (e) => {
   }
 });
 
-displayThemeButtons();
-
+  displayThemeButtons();
+  
