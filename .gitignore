@@ -128,5 +128,5 @@ dist
 
 .firebase
 
-.config/serviceAccountKey.json
+config/serviceAccountKey.json
 

@@ -51,14 +51,15 @@ const displayThemeButtons = () => {
 };
 
 import {
+  browserLocalPersistence,
   getAuth,
+  setPersistence,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-
-import app from "./js/firebase.js"
+import app from "./js/firebase.js";
 const auth = getAuth(app);
+await setPersistence(auth, browserLocalPersistence);
 
 // Show error message in the login form
 function showError(message) {
@@ -70,30 +71,40 @@ function showError(message) {
   errorDiv.innerText = message;
   document.querySelector(".form-container").appendChild(errorDiv);
 
-  setTimeout(() => errorDiv.remove(), 10000); 
+  setTimeout(() => errorDiv.remove(), 10000);
+}
 
 // Login Functionality
-document.querySelector("form").addEventListener("submit", async (e) => {
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = e.target[0].value; // Get the username (or email) input
-  const password = e.target[1].value; // Get the password input
+  const form = e.currentTarget;
+  const email = form.elements.email.value;
+  const password = form.elements.password.value;
+  const csrfToken = form.elements._csrf.value;
+  const submitButton = form.querySelector("button[type='submit']");
+  submitButton.disabled = true;
 
   try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    console.log("User logged in:", userCredential.user);
-    // Redirect to admin or protected page
-    window.location.href = "/admin"; // Adjust based on your setup
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const idToken = await userCredential.user.getIdToken();
+    const response = await fetch("/sessionLogin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken, csrfToken }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || "Login failed");
+    }
+
+    window.location.assign("/admin");
   } catch (error) {
-    showError("Wrong Username or Password!");
+    showError(error.message || "Wrong email or password");
     console.error("Error logging in:", error.message);
-    // alert("Invalid login credentials. Please try again.");
+    submitButton.disabled = false;
   }
 });
 
-  displayThemeButtons();
-  
+displayThemeButtons();

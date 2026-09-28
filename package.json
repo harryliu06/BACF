@@ -5,28 +5,16 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon src/server.js"
+    "start": "node src/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
-    "axios": "^1.7.2",
-    "body-parser": "^1.20.2",
-    "bootstrap": "^5.3.3",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
-    "express-session": "^1.18.0",
-    "firebase": "^10.14.1",
-    "firebase-admin": "^13.4.0",
-    "firebaseui": "^6.1.0",
-    "path": "^0.12.7",
-    "pg": "^8.12.0",
-    "session": "^0.1.0",
-    "url": "^0.11.3"
+    "firebase-admin": "^13.4.0"
   },
   "engines": {
     "node": "22"

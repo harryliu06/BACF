@@ -8,7 +8,6 @@
         <%= heading || "Editing Page" %>
     </title>
     <link rel="stylesheet" href="/main.css" />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         .preview-container {
@@ -45,7 +44,7 @@
     </style>
 </head>
 
-<body>
+<body data-csrf-token="<%= csrfToken %>">
     <div class="container">
         <div class="post">
             <% if (locals.post) { %>
@@ -54,6 +53,7 @@
                 </h1>
 
                 <form id="editForm" method="post" action="/posts/<%= post.id %>">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <div class="mb-3">
                         <label for="formFileMultiple" class="form-label">Add more files</label>
                         <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple
@@ -92,7 +92,8 @@
                     <h1>
                         <%= heading %>
                     </h1>
-                    <form id="newPost">
+                    <form id="newPost" method="post" action="/posts">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                         <div class="mb-3">
                             <label for="formFileMultiple" class="form-label">Multiple files input example</label>
                             <input class="form-control" type="file" id="formFileMultiple" name="image[]" multiple
@@ -125,12 +126,10 @@
         import app from "/js/firebase.js";
         import { getStorage, ref as storageRef, getDownloadURL, uploadBytes }
             from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-        import { getDatabase, ref, set, update }
-            from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-        const db = getDatabase(app);
         const storage = getStorage(app);
         const replacements = new Map();
+        const csrfToken = document.body.dataset.csrfToken;
 
         // Run immediately (script is at end of <body>, DOM is parsed)
         init();
@@ -180,7 +179,7 @@
                 const files = document.getElementById("formFileMultiple")?.files ?? [];
                 const urls = [];
                 for (const f of files) urls.push(await uploadOne(f));
-                await set(ref(db, "posts/" + Date.now()), { content, files: urls });
+                await savePost("/posts", { content, files: urls });
                 location.href = "/admin";
             } catch (err) {
                 console.error("[create] failed", err);
@@ -207,8 +206,23 @@
             const newFiles = document.getElementById("formFileMultiple").files;
             for (const f of newFiles) finalUrls.push(await uploadOne(f));
 
-            await update(ref(db, "posts/" + id), { content, files: finalUrls });
+            await savePost(`/posts/${encodeURIComponent(id)}`, { content, files: finalUrls });
             location.href = "/admin";
+        }
+
+        async function savePost(endpoint, post) {
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": csrfToken,
+                },
+                body: JSON.stringify(post),
+            });
+            if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.error || "Could not save the post");
+            }
         }
 
         function handlePreviewChange(e) {

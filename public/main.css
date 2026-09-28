@@ -161,12 +161,6 @@ a.delete:hover {
     color: #111;
 }
 
-#map {
-    height: 400px;
-    width: 100%;
-    margin-bottom: 20px;
-}
-
 /* Frames and previews */
 #frames {
     display: flex;
